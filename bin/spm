@@ -24,9 +24,25 @@ function check() {
   cat "$SPM_RECORD"
 }
 
+# Remove the bin directory from PATH if exists
+function remove_spm_path() {
+  if [[ ":$PATH:" == *":$SPM_BIN:"* ]]; then
+    export PATH=$(echo $PATH | sed "s|:$SPM_BIN:|::" | sed "s|^:$||" | sed "s|:$||")
+    echo "Removed the spm bin directory from PATH"
+  else
+    echo "The spm bin directory is not in PATH"
+  fi
+}
+
 # Uninstall spm
 function uninstall() {
-  rm -rf "$SPM_HOME"
+  if rm -rf "$SPM_HOME"; then
+    echo "All spm related files are removed"
+  else
+    echo "Failed to remove $SPM_HOME"
+  fi
+
+  remove_spm_path
 }
 
 # Add a new path
@@ -36,7 +52,7 @@ function add() {
   local value=${1#*=}
 
   # Add a record by spm
-  echo "$key=$value" >> "$SPM_RECORD"
+  echo "$key=$value" >>"$SPM_RECORD"
   echo "Added '$key=$value' to $SPM_RECORD"
 
   local rc_file=""
@@ -49,10 +65,10 @@ function add() {
     exit 1
   fi
 
-  if grep -q ":$value:" <<< "$PATH"; then
+  if grep -q ":$value:" <<<"$PATH"; then
     echo "Warning: The value '$value' already exists in PATH"
   else
-    echo "export PATH=\"\$PATH:$value\"" >> "$rc_file"
+    echo "export PATH=\"\$PATH:$value\"" >>"$rc_file"
     source "$rc_file"
   fi
 }
@@ -72,7 +88,7 @@ function remove() {
     else
       path_exists=true
     fi
-  done < "$SPM_RECORD"
+  done <"$SPM_RECORD"
 
   if [ "$path_exists" = true ]; then
     sed -i '' "/$key=/d" "$SPM_RECORD"
@@ -101,9 +117,9 @@ fi
 help() {
   cat <<'EOF'
 USAGE:
-    spm [options]
+    spm <command>
 
-FLAGS:
+Commands:
     list                        List your real shell PATH
     check                       Check the path records managed by spm
     uninstall                   Uninstall spm
@@ -113,32 +129,31 @@ EOF
 }
 
 case "$1" in
-  "list")
-    list
-    ;;
-  "check")
-    check
-    ;;
-  "uninstall")
-    uninstall
-    ;;
-  "add")
-    if [ -z "$2" ]; then
-      echo "Usage: spm add <key>=<path>"
-      exit 1
-    fi
-    add "$2"
-    ;;
-  "remove")
-    if [ -z "$2" ]; then
-      echo "Usage: spm remove <key>"
-      exit 1
-    fi
-    remove "$2"
-    ;;
-  *)
-    echo "Invalid command. "
-    help
+"list")
+  list
+  ;;
+"check")
+  check
+  ;;
+"uninstall")
+  uninstall
+  ;;
+"add")
+  if [ -z "$2" ]; then
+    echo "Usage: spm add <key>=<path>"
     exit 1
-    ;;
+  fi
+  add "$2"
+  ;;
+"remove")
+  if [ -z "$2" ]; then
+    echo "Usage: spm remove <key>"
+    exit 1
+  fi
+  remove "$2"
+  ;;
+*)
+  help
+  exit 1
+  ;;
 esac
