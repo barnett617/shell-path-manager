@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+
+SPM_HOME="$HOME/.spm"
+SPM_RECORD="$SPM_HOME/record"
+
+function ensureSpmRecord() {
+  if [! -d "$SPM_HOME"]; then
+    mkdir -p "$SPM_HOME"
+    touch "$SPM_RECORD"
+  elif [! -f "$SPM_RECORD" ]; then
+    touch "$SPM_RECORD"
+  fi
+}
+
+# List the shell PATH
+function list() {
+  echo "Shell PATH:"
+  echo "$PATH" | tr ':' '\n'
+}
+
+# Check the records
+function check() {
+  ensureSpmRecord
+  cat "$SPM_RECORD"
+}
+
+# Uninstall spm
+function uninstall() {
+  rm -rf "$SPM_HOME"
+}
+
+# Add a new path
+function add() {
+  ensureSpmRecord
+  local key=${1%%=*}
+  local value=${1#*=}
+
+  # Add a record by spm
+  echo "$key=$value" >> "$SPM_RECORD"
+  echo "Added '$key=$value' to $SPM_RECORD"
+
+  local rc_file=""
+  if [ "$default_shell" == "bash" ]; then
+    rc_file="$HOME/.bashrc"
+  elif [ "$default_shell" == "zsh" ]; then
+    rc_file="$HOME/.zshrc"
+  else
+    echo "Unsupported shell: $default_shell"
+    exit 1
+  fi
+
+  if grep -q ":$value:" <<< "$PATH"; then
+    echo "Warning: The value '$value' already exists in PATH"
+  else
+    echo "export PATH=\"\$PATH:$value\"" >> "$rc_file"
+    source "$rc_file"
+  fi
+}
+
+# Remove a path created by spm
+function remove() {
+  local key=$1
+  local path_exists=false
+  local new_path=""
+
+  ensureSpmRecord
+
+  # Read the record file and create a new path
+  while IFS='=' read -r current_key current_value; do
+    if [[ $current_key != $key ]]; then
+      new_path+=":${current_value}"
+    else
+      path_exists=true
+    fi
+  done < "$SPM_RECORD"
+
+  if [ "$path_exists" = true ]; then
+    sed -i '' "/$key=/d" "$SPM_RECORD"
+    export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "$current_value" | tr '\n' ':')
+    export PATH=${PATH%:}
+    echo "Removed '$key' from $SPM_RECORD"
+    echo "Updated PATH"
+  else
+    echo "The key '$key' does not exist in $SPM_RECORD"
+  fi
+}
+
+# Get the user's default shell
+default_shell=$(basename "$SHELL")
+
+# Compare the default shell with different shells
+if [[ "$default_shell" == "bash" ]]; then
+  echo "Default shell is Bash"
+elif [[ "$default_shell" == "zsh" ]]; then
+  echo "Default shell is Zsh"
+else
+  echo "Default shell is not Bash or Zsh"
+  exit 1
+fi
+
+help() {
+  cat <<'EOF'
+USAGE:
+    spm [options]
+
+FLAGS:
+    list                        List your real shell PATH
+    check                       Check the path records managed by spm
+    uninstall                   Uninstall spm
+    add PATH_KEY=BINARY_PATH    Add a new path
+    remove PATH_KEY             Remove a path created by spm
+EOF
+}
+
+case "$1" in
+  "list")
+    list
+    ;;
+  "check")
+    check
+    ;;
+  "uninstall")
+    uninstall
+    ;;
+  "add")
+    if [ -z "$2" ]; then
+      echo "Usage: spm add <key>=<path>"
+      exit 1
+    fi
+    add "$2"
+    ;;
+  "remove")
+    if [ -z "$2" ]; then
+      echo "Usage: spm remove <key>"
+      exit 1
+    fi
+    remove "$2"
+    ;;
+  *)
+    echo "Invalid command. "
+    help
+    exit 1
+    ;;
+esac
