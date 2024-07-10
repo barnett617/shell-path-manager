@@ -51,24 +51,37 @@ spm_download() {
   fi
 }
 
-# Download the binary file from github
-spm_download -s "$SPM_EXECUTABLE" -o $SPM_EXECUTABLE_URI || {
-  { echo "Failed to download spm executable"; exit 1; }
+clear_spm() {
+  rm -rf "$SPM_HOME"
 }
-chmod +x "$SPM_EXECUTABLE" ||
-  { echo "Failed to set permissions on spm executable"; exit 1; }
-echo "Downloaded binary file: $SPM_EXECUTABLE"
+
+# Download the binary file from github
+download_executable() {
+  local uri=$1
+  local executable=$2
+
+  if spm_download -s $uri -o $executable; then
+    chmod +x $executable
+    echo "Downloaded binary file: $executable"
+  else
+    echo "Failed to download spm executable"
+    clear_spm
+  fi
+}
+
+download_executable $SPM_EXECUTABLE_URI $SPM_EXECUTABLE || {
+  { echo "Failed to set permission on spm executable"; exit 1; }
+}
 
 # Add the bin directory to PATH and update it immediately
-if [ -d "$SPM_BIN" ]; then
-  case ":$PATH:" in
-    *":$SPM_BIN:"*)
-      echo "The bin directory is already in PATH"
-      ;;
-    *)
-      echo "export PATH=\"$SPM_BIN:\$PATH\"" >> "$HOME/.zshrc"
-      source "$HOME/.zshrc"
-      echo "spm is ready to use"
-      ;;
-  esac
+if [[ ":$PATH:" == *":$SPM_BIN:"* ]]; then
+  echo "The spm bin directory is already in PATH"
+else
+  echo "export PATH=\"$SPM_BIN:\$PATH\"" >> "$HOME/.zshrc"
+  if source "$HOME/.zshrc"; then
+    echo "spm is ready to use"
+  else
+    echo "Failed to source .zshrc. Please manually add the following line to your .zshrc file:"
+    echo "export PATH=\"$SPM_BIN:\$PATH\""
+  fi
 fi
