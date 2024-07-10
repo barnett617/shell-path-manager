@@ -44,45 +44,60 @@ spm_has() {
   type "$1" >/dev/null 2>&1
 }
 
-# Download helper
-spm_download() {
-  if spm_has "curl"; then
-    echo "Downloading binary file: $uri"
-    curl -# --fail --compressed -q "$@"
-  fi
-}
-
 # Clear helper
 clear_spm() {
   rm -rf "$SPM_HOME"
 }
 
+manual_source_tip() {
+  echo "Failed to source .zshrc. Please manually add the following line to your .zshrc file:"
+  echo "export PATH=\"$SPM_BIN:\$PATH\""
+}
+
 # Append spm bin directory to PATH
 append_path() {
   # Switch to Zsh
-  chsh -s /bin/zsh
+  if chsh -s /bin/zsh; then
+    echo "Switched to Zsh"
+  else
+    manual_source_tip
+    exit 1
+  fi
 
   # Add the bin directory to PATH
   echo "export PATH=\"$SPM_BIN:\$PATH\"" >>"$HOME/.zshrc"
   if source "$HOME/.zshrc"; then
     echo "spm is ready to use"
   else
-    echo "Failed to source .zshrc. Please manually add the following line to your .zshrc file:"
-    echo "export PATH=\"$SPM_BIN:\$PATH\""
+    manual_source_tip
+  fi
+}
+
+# Download helper
+spm_download() {
+  local uri=$1
+  local executable=$2
+  if spm_has "curl"; then
+    echo "Downloading binary file: $uri"
+    curl --fail --compressed -q -w "Transfer time: %{time_total}s, Download speed: %{speed_download} bytes/s\n" -o $executable $uri
   fi
 }
 
 # Download the spm executable and set permission
-if spm_download $SPM_EXECUTABLE_URI $SPM_EXECUTABLE; then
-  if chmod +x $SPM_EXECUTABLE; then
-    append_path
+setup_executable() {
+  if spm_download $SPM_EXECUTABLE_URI $SPM_EXECUTABLE; then
+    if chmod +x $SPM_EXECUTABLE; then
+      append_path
+    else
+      echo "Failed to set permission on spm executable"
+      echo "Please manually add the following line to your .zshrc file:"
+      echo "export PATH=\"$SPM_BIN:\$PATH\""
+    fi
   else
-    echo "Failed to set permission on spm executable"
-    echo "Please manually add the following line to your .zshrc file:"
-    echo "export PATH=\"$SPM_BIN:\$PATH\""
+    echo "Failed to download spm executable"
+    clear_spm
+    exit 1
   fi
-else
-  echo "Failed to download spm executable"
-  clear_spm
-  exit 1
-fi
+}
+
+setup_executable
