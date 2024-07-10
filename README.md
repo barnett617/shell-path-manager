@@ -50,6 +50,12 @@ spm remove go
 spm uninstall
 ```
 
+or
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/barnett617/shell-path-manager/master/tools/uninstall.sh | bash
+```
+
 This will remove all files about spm(actually just a single folder ~/.spm) but won't update your PATH changes because spm is just a path manager tool to help you adding path and make it work more convenient. 
 
 Your PATH is still your PATH with or without it, it won't break your binary paths after you stopping using spm.
