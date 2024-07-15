@@ -5,7 +5,7 @@ spm (which is short for Shell Path Manager) is a small simple tool to make shell
 ## Installation
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/barnett617/shell-path-manager/master/tools/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/barnett617/shell-path-manager/main/tools/install.sh | bash
 ```
 
 ## Usage

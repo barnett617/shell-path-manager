@@ -6,7 +6,7 @@ SPM_HOME="$HOME/.spm"
 SPM_BIN="$SPM_HOME/bin"
 SPM_RECORD="$SPM_HOME/record"
 SPM_EXECUTABLE="$SPM_BIN/spm"
-SPM_EXECUTABLE_URI="https://raw.githubusercontent.com/barnett617/shell-path-manager/master/bin/spm"
+SPM_EXECUTABLE_URI="https://raw.githubusercontent.com/barnett617/shell-path-manager/main/bin/spm"
 
 error() {
   echo -e "Error: " "$@" >&2
