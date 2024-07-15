@@ -4,17 +4,16 @@ SPM_HOME="$HOME/.spm"
 SPM_RECORD="$SPM_HOME/record"
 
 function ensureSpmRecord() {
-  if [! -d "$SPM_HOME"]; then
+  if [ ! -d $SPM_HOME ]; then
     mkdir -p "$SPM_HOME"
     touch "$SPM_RECORD"
-  elif [! -f "$SPM_RECORD" ]; then
+  elif [ ! -f "$SPM_RECORD" ]; then
     touch "$SPM_RECORD"
   fi
 }
 
 # List the shell PATH
 function list() {
-  echo "Shell PATH:"
   echo "$PATH" | tr ':' '\n'
 }
 
@@ -24,16 +23,6 @@ function check() {
   cat "$SPM_RECORD"
 }
 
-# Remove the bin directory from PATH if exists
-function remove_spm_path() {
-  if [[ ":$PATH:" == *":$SPM_BIN:"* ]]; then
-    export PATH=$(echo $PATH | sed "s|:$SPM_BIN:|::" | sed "s|^:$||" | sed "s|:$||")
-    echo "Removed the spm bin directory from PATH"
-  else
-    echo "The spm bin directory is not in PATH"
-  fi
-}
-
 # Uninstall spm
 function uninstall() {
   if rm -rf "$SPM_HOME"; then
@@ -41,9 +30,10 @@ function uninstall() {
   else
     echo "Failed to remove $SPM_HOME"
   fi
-
-  remove_spm_path
 }
+
+# Get the user's default shell
+default_shell=$(basename "$SHELL")
 
 # Add a new path
 function add() {
@@ -67,9 +57,14 @@ function add() {
 
   if grep -q ":$value:" <<<"$PATH"; then
     echo "Warning: The value '$value' already exists in PATH"
-  else
-    echo "export PATH=\"\$PATH:$value\"" >>"$rc_file"
+  elif [[ -w "$rc_file" ]]; then
+    {
+      echo -e "\n"
+      echo "export PATH=\"$value:\$PATH\""
+    } >>"$rc_file"
     source "$rc_file"
+  else
+    echo "Warning: Failed to add '$key=$value' to $rc_file"
   fi
 }
 
@@ -100,19 +95,6 @@ function remove() {
     echo "The key '$key' does not exist in $SPM_RECORD"
   fi
 }
-
-# Get the user's default shell
-default_shell=$(basename "$SHELL")
-
-# Compare the default shell with different shells
-if [[ "$default_shell" == "bash" ]]; then
-  echo "Default shell is Bash"
-elif [[ "$default_shell" == "zsh" ]]; then
-  echo "Default shell is Zsh"
-else
-  echo "Default shell is not Bash or Zsh"
-  exit 1
-fi
 
 help() {
   cat <<'EOF'
