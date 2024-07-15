@@ -13,8 +13,8 @@ error() {
   exit 1
 }
 
-if [ ! -d "$SPM_BIN" ]; then
-  mkdir -p "SPM_BIN" ||
+if [ ! -d $SPM_BIN ]; then
+  mkdir -p "$SPM_BIN" ||
     error "Failed to create directory: $SPM_BIN"
 else
   error "Directory already exists: $SPM_HOME"
