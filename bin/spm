@@ -59,12 +59,18 @@ function add() {
     echo "Warning: The value '$value' already exists in PATH"
   elif [[ -w "$rc_file" ]]; then
     {
-      echo -e "\n"
       echo "export PATH=\"$value:\$PATH\""
     } >>"$rc_file"
-    source "$rc_file"
   else
     echo "Warning: Failed to add '$key=$value' to $rc_file"
+  fi
+
+  if [ "$default_shell" == "bash" ]; then
+    source "$rc_file"
+  elif [ "$default_shell" == "zsh" ]; then
+    exec $SHELL
+  else
+    echo "Warning: Failed to auto load $rc_file"
   fi
 }
 
@@ -76,21 +82,33 @@ function remove() {
 
   ensureSpmRecord
 
+  local path_value=""
+
   # Read the record file and create a new path
   while IFS='=' read -r current_key current_value; do
     if [[ $current_key != $key ]]; then
       new_path+=":${current_value}"
     else
       path_exists=true
+      path_value="${current_value}"
     fi
   done <"$SPM_RECORD"
+  echo "Removed '$key' from $SPM_RECORD"
+
+  local rc_file=""
+  if [ "$default_shell" == "bash" ]; then
+    rc_file="$HOME/.bashrc"
+  elif [ "$default_shell" == "zsh" ]; then
+    rc_file="$HOME/.zshrc"
+  else
+    echo "Unsupported shell: $default_shell"
+    exit 1
+  fi
 
   if [ "$path_exists" = true ]; then
-    sed -i '' "/$key=/d" "$SPM_RECORD"
-    export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "$current_value" | tr '\n' ':')
-    export PATH=${PATH%:}
-    echo "Removed '$key' from $SPM_RECORD"
-    echo "Updated PATH"
+    # find and remove the export command like "export PATH="b:$PATH"" from $rc_file
+    sed -i '' "/export PATH=\"$path_value:/d" "$rc_file"
+    echo "Removed '$key=$path_value' from $rc_file"
   else
     echo "The key '$key' does not exist in $SPM_RECORD"
   fi

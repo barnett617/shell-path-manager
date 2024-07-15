@@ -55,7 +55,7 @@ spm uninstall
 Or you can use remote script to uninstall if your local spm doesn't work correctly.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/barnett617/shell-path-manager/master/tools/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/barnett617/shell-path-manager/main/tools/uninstall.sh | bash
 ```
 
 This will remove all files about spm(actually just a single folder ~/.spm) but won't update your PATH changes because spm is just a path manager tool to help you adding path and make it work more convenient. 

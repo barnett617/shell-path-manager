@@ -55,7 +55,7 @@ zsh)
 
   if [[ -w $zsh_config ]]; then
     {
-      echo -e "\n# spm\n"
+      echo -e "\n# spm"
 
       for command in "${commands[@]}"; do
         echo "$command"
@@ -65,6 +65,7 @@ zsh)
     echo "Added \"$SPM_BIN\" to \$PATH in \"$zsh_config\""
 
     refresh_command="exec $SHELL"
+    exec $SHELL
   else
     echo "Mannually add the directory to $zsh_config file:"
 
@@ -88,7 +89,7 @@ bash)
   for bash_config in "${bash_configs[@]}"; do
     if [[ -w $bash_config ]]; then
       {
-        echo -e "\n# spm\n"
+        echo -e "\n# spm"
 
         for command in "${commands[@]}"; do
           echo "$command"
