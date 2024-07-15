@@ -1,103 +1,126 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 SPM_HOME="$HOME/.spm"
-SPM_RECORD="$SPM_HOME/record"
 SPM_BIN="$SPM_HOME/bin"
+SPM_RECORD="$SPM_HOME/record"
 SPM_EXECUTABLE="$SPM_BIN/spm"
 SPM_EXECUTABLE_URI="https://raw.githubusercontent.com/barnett617/shell-path-manager/master/bin/spm"
 
-# Get the default shell
-default_shell=$(basename "$SHELL")
-
-# Check if the default shell is Zsh
-if [[ "$default_shell" != "zsh" ]]; then
-  echo "Error: Oh My Zsh can't be loaded from: $default_shell. You need to run Zsh instead."
+error() {
+  echo -e "Error: " "$@" >&2
   exit 1
-fi
+}
 
-# Create the .spm directory if it doesn't exist
-if [ ! -d "$SPM_HOME" ]; then
-  mkdir "$SPM_HOME"
-  echo "Created directory: $SPM_HOME"
-else
-  echo "Directory already exists: $SPM_HOME"
-fi
-
-# Create the bin directory inside .spm if it doesn't exist
 if [ ! -d "$SPM_BIN" ]; then
-  mkdir "$SPM_BIN"
-  echo "Created directory: $SPM_BIN"
+  mkdir -p "SPM_BIN" ||
+    error "Failed to create directory: $SPM_BIN"
 else
-  echo "Directory already exists: $SPM_BIN"
+  error "Directory already exists: $SPM_HOME"
 fi
 
-# Create the record file inside .spm if it doesn't exist
 if [ ! -f "$SPM_RECORD" ]; then
   touch "$SPM_RECORD"
-  echo "Created file: $SPM_RECORD"
 else
-  echo "File already exists: $SPM_RECORD"
+  error "File already exists: $SPM_RECORD"
 fi
 
-# Check if the file exist
-spm_has() {
-  type "$1" >/dev/null 2>&1
-}
+curl --fail --location --progress-bar --output "$SPM_EXECUTABLE" "$SPM_EXECUTABLE_URI" ||
+  error "Failed to download spm executable"
 
-# Clear helper
-clear_spm() {
-  rm -rf "$SPM_HOME"
-}
+chmod +x "$SPM_EXECUTABLE" ||
+  error "Failed to set permission on spm executable"
 
-manual_source_tip() {
-  echo "Failed to source .zshrc. Please manually add the following line to your .zshrc file:"
-  echo "export PATH=\"$SPM_BIN:\$PATH\""
-}
+if command -v spm >/dev/null; then
+  $SPM_EXECUTABLE completions &>/dev/null || :
 
-# Append spm bin directory to PATH
-append_path() {
-  # Switch to Zsh
-  if chsh -s /bin/zsh; then
-    echo "Switched to Zsh"
+  echo "Run 'spm' to get started"
+  exit
+fi
+
+refresh_command=''
+
+echo
+
+case $(basename "$SHELL") in
+zsh)
+  SHELL=zsh $SPM_EXECUTABLE completions &>/dev/null || :
+
+  commands=(
+    "export PATH=\"$SPM_BIN:\$PATH\""
+  )
+
+  zsh_config=$HOME/.zshrc
+
+  if [[ -w $zsh_config ]]; then
+    {
+      echo -e "\n# spm\n"
+
+      for command in "${commands[@]}"; do
+        echo "$command"
+      done
+    } >>"$zsh_config"
+
+    echo "Added \"$SPM_BIN\" to \$PATH in \"$zsh_config\""
+
+    refresh_command="exec $SHELL"
   else
-    manual_source_tip
-    exit 1
-  fi
+    echo "Mannually add the directory to $zsh_config file:"
 
-  # Add the bin directory to PATH
-  echo "export PATH=\"$SPM_BIN:\$PATH\"" >>"$HOME/.zshrc"
-  if source "$HOME/.zshrc"; then
-    echo "spm is ready to use"
-  else
-    manual_source_tip
+    for command in "${commands[@]}"; do
+      echo "$command"
+    done
   fi
-}
+  ;;
+bash)
+  SHELL=bash $SPM_EXECUTABLE completions &>/dev/null || :
 
-# Download helper
-spm_download() {
-  local uri=$1
-  local executable=$2
-  if spm_has "curl"; then
-    echo "Downloading binary file: $uri"
-    curl --fail --compressed -q -w "Transfer time: %{time_total}s, Download speed: %{speed_download} bytes/s\n" -o $executable $uri
-  fi
-}
+  commands=(
+    "export PATH=\"$SPM_BIN:\$PATH\""
+  )
 
-# Download the spm executable and set permission
-setup_executable() {
-  if spm_download $SPM_EXECUTABLE_URI $SPM_EXECUTABLE; then
-    if chmod +x $SPM_EXECUTABLE; then
-      append_path
+  bash_configs=(
+    "$HOME/.bashrc"
+    "$HOME/.bash_profile"
+  )
+
+  for bash_config in "${bash_configs[@]}"; do
+    if [[ -w $bash_config ]]; then
+      {
+        echo -e "\n# spm\n"
+
+        for command in "${commands[@]}"; do
+          echo "$command"
+        done
+      } >>"$bash_config"
+
+      echo "Added \"$SPM_BIN\" to \$PATH in \"$bash_config\""
+
+      refresh_command="source $bash_config"
+      break
     else
-      echo "Failed to set permission on spm executable"
-      echo "Please manually add the following line to your .zshrc file:"
-      echo "export PATH=\"$SPM_BIN:\$PATH\""
-    fi
-  else
-    echo "Failed to download spm executable"
-    clear_spm
-    exit 1
-  fi
-}
+      echo "Mannually add the directory to $bash_config file:"
 
-setup_executable
+      for command in "${commands[@]}"; do
+        echo "$command"
+      done
+    fi
+  done
+  ;;
+*)
+  echo "Mannual add the directory to ~/.bashrc (or similar):"
+
+  for command in "${commands[@]}"; do
+    echo "$command"
+  done
+  ;;
+esac
+
+echo
+echo "To get started, run: "
+echo
+
+if [[ -n $refresh_command ]]; then
+  echo "$refresh_command"
+fi

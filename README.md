@@ -50,7 +50,9 @@ spm remove go
 spm uninstall
 ```
 
-or
+> This make spm to self destory then remove its binary path from PATH.
+
+Or you can use remote script to uninstall if your local spm doesn't work correctly.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/barnett617/shell-path-manager/master/tools/uninstall.sh | bash
@@ -101,7 +103,7 @@ spm use a ~/.spm/record to store the record of each path so it can conveniently 
 
 ### Uninstalling
 
-It's just to remove of the ~/.spm folder, that's all the things spm works with.
+It's just to remove of the ~/.spm folder, that's all the things spm works with. Then it will remove the spm binary from your PATH.
 
 ## File Structure
 
