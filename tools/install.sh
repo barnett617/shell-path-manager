@@ -28,7 +28,6 @@ fi
 
 curl --fail --location --progress-bar --output "$SPM_EXECUTABLE" "$SPM_EXECUTABLE_URI" ||
   error "Failed to download spm executable"
-  rm -rf "$SPM_HOME";
 
 chmod +x "$SPM_EXECUTABLE" ||
   error "Failed to set permission on spm executable"
