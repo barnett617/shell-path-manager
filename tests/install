@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
+set -x
 
 SPM_HOME="$HOME/.spm"
 SPM_BIN="$SPM_HOME/bin"
 SPM_RECORD="$SPM_HOME/record"
 SPM_EXECUTABLE="$SPM_BIN/spm"
-SPM_EXECUTABLE_URI="https://raw.githubusercontent.com/barnett617/shell-path-manager/main/bin/spm"
+SPM_EXECUTABLE_URI="$PWD/bin/spm"
 
 error() {
   echo -e "Error: " "$@" >&2
@@ -26,9 +27,9 @@ else
   error "File already exists: $SPM_RECORD"
 fi
 
-curl --fail --location --progress-bar --output "$SPM_EXECUTABLE" "$SPM_EXECUTABLE_URI" ||
-  error "Failed to download spm executable"
-  rm -rf "$SPM_HOME";
+# copy the spm executable to the bin directory
+cp "$SPM_EXECUTABLE_URI" "$SPM_EXECUTABLE" ||
+  error "Failed to move spm executable to bin directory"
 
 chmod +x "$SPM_EXECUTABLE" ||
   error "Failed to set permission on spm executable"

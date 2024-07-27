@@ -2,6 +2,14 @@
 
 SPM_HOME="$HOME/.spm"
 SPM_RECORD="$SPM_HOME/record"
+default_shell=$(basename "$SHELL")
+
+function refreshShell() {
+  echo
+  echo "Please run the following command to reload the environment: "
+  echo
+  echo "exec $SHELL"
+}
 
 function ensureSpmRecord() {
   if [ ! -d $SPM_HOME ]; then
@@ -30,10 +38,24 @@ function uninstall() {
   else
     echo "Failed to remove $SPM_HOME"
   fi
-}
 
-# Get the user's default shell
-default_shell=$(basename "$SHELL")
+  local rc_file=""
+  if [ "$default_shell" == "bash" ]; then
+    rc_file="$HOME/.bashrc"
+  elif [ "$default_shell" == "zsh" ]; then
+    rc_file="$HOME/.zshrc"
+  else
+    echo "Unsupported shell: $default_shell"
+  fi
+
+  if [[ -w "$rc_file" ]]; then
+    # remove the lines between "# spm start" and "# spm end"
+    sed -i '' '/^# spm start/,/# spm end/d' "$rc_file" ||
+      echo "Warning: Failed to remove spm related lines from $rc_file"
+  else
+    echo "Warning: Failed to write to $rc_file"
+  fi
+}
 
 # Add a new path
 function add() {
@@ -41,9 +63,13 @@ function add() {
   local key=${1%%=*}
   local value=${1#*=}
 
-  # Add a record by spm
-  echo "$key=$value" >>"$SPM_RECORD"
-  echo "Added '$key=$value' to $SPM_RECORD"
+  # Add a record if not exists
+  if ! grep -q "^$key=" "$SPM_RECORD"; then
+    echo "$key=$value" >>"$SPM_RECORD"
+    echo "Added '$key=$value' to $SPM_RECORD"
+  else
+    echo "Warning: '$key=$value' already exists in $SPM_RECORD"
+  fi
 
   local rc_file=""
   if [ "$default_shell" == "bash" ]; then
@@ -55,44 +81,35 @@ function add() {
     exit 1
   fi
 
-  if grep -q ":$value:" <<<"$PATH"; then
-    echo "Warning: The value '$value' already exists in PATH"
-  elif [[ -w "$rc_file" ]]; then
-    {
-      echo "export PATH=\"$value:\$PATH\""
-    } >>"$rc_file"
+  if [[ -w "$rc_file" ]]; then
+    # construct the new path with the input value
+    new_path="export PATH=$value:PATH"
+    # insert the new path before the line containing "# spm end"
+    sed -i '' '/# spm end/ s#^#'"$new_path\n"'#' $rc_file
+    refreshShell
   else
-    echo "Warning: Failed to add '$key=$value' to $rc_file"
-  fi
-
-  if [ "$default_shell" == "bash" ]; then
-    source "$rc_file"
-  elif [ "$default_shell" == "zsh" ]; then
-    exec $SHELL
-  else
-    echo "Warning: Failed to auto load $rc_file"
+    echo "Error: $rc_file is not writable"
   fi
 }
 
 # Remove a path created by spm
 function remove() {
+  ensureSpmRecord
   local key=$1
   local path_exists=false
   local new_path=""
-
-  ensureSpmRecord
-
   local path_value=""
 
-  # Read the record file and create a new path
   while IFS='=' read -r current_key current_value; do
     if [[ $current_key != $key ]]; then
-      new_path+=":${current_value}"
+      new_path+="${current_key}=${current_value}"
     else
       path_exists=true
       path_value="${current_value}"
     fi
   done <"$SPM_RECORD"
+
+  echo "$new_path" >"$SPM_RECORD"
   echo "Removed '$key' from $SPM_RECORD"
 
   local rc_file=""
@@ -106,8 +123,20 @@ function remove() {
   fi
 
   if [ "$path_exists" = true ]; then
-    # find and remove the export command like "export PATH="b:$PATH"" from $rc_file
-    sed -i '' "/export PATH=\"$path_value:/d" "$rc_file"
+
+    # find the line between # spm start and # spm end which matches the path_value
+    local line=$(sed -n "/# spm start/,/# spm end/p" "$rc_file" | grep -m 1 "$path_value")
+
+    if [[ -n "$line" ]]; then
+      if [[ -w "$rc_file" ]]; then
+        # remove the line
+        sed -i '' "\#$line#d" $rc_file
+        refreshShell
+      else
+        echo "Warning: ${rc_file} is not writable"
+      fi
+    fi
+
     echo "Removed '$key=$path_value' from $rc_file"
   else
     echo "The key '$key' does not exist in $SPM_RECORD"

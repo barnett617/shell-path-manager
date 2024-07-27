@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+SPM_HOME="$HOME/.spm"
+SPM_RECORD="$SPM_HOME/record"
+default_shell=$(basename "$SHELL")
+
+function refreshShell() {
+  echo
+  echo "Please run the following command to reload the environment: "
+  echo
+  echo "exec $SHELL"
+}
+
+function ensureSpmRecord() {
+  if [ ! -d $SPM_HOME ]; then
+    mkdir -p "$SPM_HOME"
+    touch "$SPM_RECORD"
+  elif [ ! -f "$SPM_RECORD" ]; then
+    touch "$SPM_RECORD"
+  fi
+}
+
+function add() {
+  ensureSpmRecord
+  local key=${1%%=*}
+  local value=${1#*=}
+
+  # Add a record if not exists
+  if ! grep -q "^$key=" "$SPM_RECORD"; then
+    echo "$key=$value" >>"$SPM_RECORD"
+    echo "Added '$key=$value' to $SPM_RECORD"
+  else
+    echo "Warning: '$key=$value' already exists in $SPM_RECORD"
+  fi
+
+  local rc_file=""
+  if [ "$default_shell" == "bash" ]; then
+    rc_file="$HOME/.bashrc"
+  elif [ "$default_shell" == "zsh" ]; then
+    rc_file="$HOME/.zshrc"
+  else
+    echo "Unsupported shell: $default_shell"
+    exit 1
+  fi
+
+  if [[ -w "$rc_file" ]]; then
+    # construct the new path with the input value
+    new_path="export PATH=$value:PATH"
+    # insert the new path before the line containing "# spm end"
+    sed -i '' '/# spm end/ s#^#'"$new_path\n"'#' $rc_file
+    refreshShell
+  else
+    echo "Error: $rc_file is not writable"
+  fi
+}
+
+set -eux
+add $1

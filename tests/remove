@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+SPM_HOME="$HOME/.spm"
+SPM_RECORD="$SPM_HOME/record"
+default_shell=$(basename "$SHELL")
+
+function refreshShell() {
+  echo
+  echo "Please run the following command to reload the environment: "
+  echo
+  echo "exec $SHELL"
+}
+
+function ensureSpmRecord() {
+  if [ ! -d $SPM_HOME ]; then
+    mkdir -p "$SPM_HOME"
+    touch "$SPM_RECORD"
+  elif [ ! -f "$SPM_RECORD" ]; then
+    touch "$SPM_RECORD"
+  fi
+}
+
+function remove() {
+  ensureSpmRecord
+  local key=$1
+  local path_exists=false
+  local new_path=""
+  local path_value=""
+
+  while IFS='=' read -r current_key current_value; do
+    if [[ $current_key != $key ]]; then
+      new_path+="${current_key}=${current_value}"
+    else
+      path_exists=true
+      path_value="${current_value}"
+    fi
+  done <"$SPM_RECORD"
+
+  echo "$new_path" >"$SPM_RECORD"
+  echo "Removed '$key' from $SPM_RECORD"
+
+  local rc_file=""
+  if [ "$default_shell" == "bash" ]; then
+    rc_file="$HOME/.bashrc"
+  elif [ "$default_shell" == "zsh" ]; then
+    rc_file="$HOME/.zshrc"
+  else
+    echo "Unsupported shell: $default_shell"
+    exit 1
+  fi
+
+  if [ "$path_exists" = true ]; then
+
+    # find the line between # spm start and # spm end which matches the path_value
+    local line=$(sed -n "/# spm start/,/# spm end/p" "$rc_file" | grep -m 1 "$path_value")
+
+    if [[ -n "$line" ]]; then
+      if [[ -w "$rc_file" ]]; then
+        # remove the line
+        sed -i '' "\#$line#d" $rc_file
+        refreshShell
+      else
+        echo "Warning: ${rc_file} is not writable"
+      fi
+    fi
+
+    echo "Removed '$key=$path_value' from $rc_file"
+  else
+    echo "The key '$key' does not exist in $SPM_RECORD"
+  fi
+}
+
+set -eux
+remove "$1"

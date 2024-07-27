@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -eu
+
 SPM_HOME="$HOME/.spm"
 SPM_RECORD="$SPM_HOME/record"
 default_shell=$(basename "$SHELL")
@@ -27,8 +29,7 @@ function uninstall() {
   else
     echo "Warning: Failed to write to $rc_file"
   fi
-
 }
 
-set -eu
+set -x
 uninstall
