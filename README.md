@@ -1,6 +1,6 @@
 # Shell Path Manager
 
-spm (which is short for Shell Path Manager) is a small simple tool to make shell path management more simple and intuitive.
+spm (which is short for Shell Path Manager) is a simple small tool to make shell path management more simple and intuitive.
 
 ## Installation
 
