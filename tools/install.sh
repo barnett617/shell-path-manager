@@ -48,13 +48,13 @@ zsh)
 
   if [[ -w $zsh_config ]]; then
     {
-      echo -e "# spm start"
+      echo "# spm start"
 
       for command in "${commands[@]}"; do
         echo "$command"
       done
 
-      echo -e "# spm end"
+      echo "# spm end"
     } >>"$zsh_config"
 
     echo "Added \"$SPM_BIN\" to \$PATH in \"$zsh_config\""
@@ -83,13 +83,13 @@ bash)
   for bash_config in "${bash_configs[@]}"; do
     if [[ -w $bash_config ]]; then
       {
-        echo -e "# spm start"
+        echo "# spm start"
 
         for command in "${commands[@]}"; do
           echo "$command"
         done
 
-        echo -e "# spm end"
+        echo "# spm end"
       } >>"$bash_config"
 
       echo "Added \"$SPM_BIN\" to \$PATH in \"$bash_config\""
