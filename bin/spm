@@ -86,7 +86,9 @@ function add() {
     new_path="export PATH=$value:PATH"
     # insert the new path before the line containing "# spm end"
     sed -i '' '/# spm end/ s#^#'"$new_path\n"'#' $rc_file
-    refreshShell
+    # export the new path to make it executable at once
+    export PATH=$value:PATH
+    # refreshShell
   else
     echo "Error: $rc_file is not writable"
   fi
