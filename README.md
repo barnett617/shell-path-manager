@@ -83,6 +83,8 @@ That's it.
 echo "$PATH" | tr ':' '\n'
 ```
 
+It will list all the paths in your PATH in multiple lines.
+
 ### List spm managed paths
 
 ```
@@ -116,9 +118,27 @@ It's just to remove of the ~/.spm folder, that's all the things spm works with. 
 
 ## Acknowledgement
 
-Thanks for these projects for inspiring me:
+Thanks to:
 
-- https://github.com/ohmyzsh/ohmyzsh
-- https://github.com/nvm-sh/nvm
-- https://github.com/oven-sh/bun
-- https://github.com/Homebrew/homebrew-core
+- [bun](https://github.com/oven-sh/bun) with friendly installation process which inspired the installation script arrangement.
+- [nvm](https://github.com/nvm-sh/nvm) with thoughtful works about corner cases and tests which inspired the unit test designs.
+- [path-manager](https://github.com/gregory144/path-manager) with trying to manage path with C implementation which inspired this shell version.
+
+## Problems
+
+Because I develop this tool on MacOS with [zsh](https://github.com/ohmyzsh/ohmyzsh), so I only tested it on my environment.
+
+If someone uses it on other OS, for example Linux, there may be a predictible problem because I use [sed](https://www.gnu.org/software/sed/manual/sed.html) for file writing and it may works differently on Linux and MacOS as belows:
+
+- [differences-between-sed-on-mac-osx-and-other-standard-sed](https://unix.stackexchange.com/questions/13711/differences-between-sed-on-mac-osx-and-other-standard-sed)
+- [sed-command-with-i-option-failing-on-mac-but-works-on-linux](https://stackoverflow.com/questions/4247068/sed-command-with-i-option-failing-on-mac-but-works-on-linux)
+
+Addtionaly, AFAIK, Windows has it GUI tool to manager path well, so this tool is not necessary.
+
+If someone uses a shell other than zsh or bash, this tool is not supported yet.
+
+If other problems occurs while using, PRs for compatibility are welcome.
+
+## License
+
+See [LICENSE.md](./LICENSE.md).
