@@ -9,6 +9,12 @@ function refreshShell() {
   echo "Please run the following command to reload the environment: "
   echo
   echo "exec $SHELL"
+
+  # if $1 exists, then echo $1
+  if [ -n "$1" ]; then
+    echo "or"
+    echo "$1"
+  fi
 }
 
 function ensureSpmRecord() {
