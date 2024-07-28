@@ -63,8 +63,6 @@ function remove() {
         echo "Warning: ${rc_file} is not writable"
       fi
     fi
-
-    echo "Removed '$key=$path_value' from $rc_file"
   else
     echo "The key '$key' does not exist in $SPM_RECORD"
   fi
