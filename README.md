@@ -141,4 +141,4 @@ If other problems occurs while using, PRs for compatibility are welcome.
 
 ## License
 
-See [LICENSE.md](./LICENSE.md).
+See [LICENSE.md](./LICENSE).
